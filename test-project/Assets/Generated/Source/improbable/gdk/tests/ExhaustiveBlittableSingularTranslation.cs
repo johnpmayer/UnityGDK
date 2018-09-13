@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Profiling;
 using Unity.Mathematics;
 using Unity.Entities;
 using Unity.Collections;
@@ -46,6 +47,7 @@ namespace Generated.Improbable.Gdk.Tests
                     return;
                 }
 
+                Profiler.BeginSample("ExhaustiveBlittableSingular");
                 var data = Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular.Serialization.Deserialize(op.Data.SchemaData.Value.GetFields(), World);
                 data.DirtyBit = false;
                 entityManager.AddComponentData(entity, data);
@@ -99,6 +101,8 @@ namespace Generated.Improbable.Gdk.Tests
                         .WithField("Component", "Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular")
                     );
                 }
+
+                Profiler.EndSample();
             }
 
             public override void OnRemoveComponent(RemoveComponentOp op)
@@ -107,6 +111,8 @@ namespace Generated.Improbable.Gdk.Tests
                 {
                     return;
                 }
+
+                Profiler.BeginSample("ExhaustiveBlittableSingular");
 
                 entityManager.RemoveComponent<Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular.Component>(entity);
 
@@ -126,6 +132,8 @@ namespace Generated.Improbable.Gdk.Tests
                         .WithField("Component", "Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular")
                     );
                 }
+
+                Profiler.EndSample();
             }
 
             public override void OnComponentUpdate(ComponentUpdateOp op)
@@ -135,6 +143,7 @@ namespace Generated.Improbable.Gdk.Tests
                     return;
                 }
 
+                Profiler.BeginSample("ExhaustiveBlittableSingular");
                 if (entityManager.HasComponent<NotAuthoritative<Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular.Component>>(entity))
                 {
                     var data = entityManager.GetComponentData<Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular.Component>(entity);
@@ -149,7 +158,6 @@ namespace Generated.Improbable.Gdk.Tests
                 if (entityManager.HasComponent<Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular.ReceivedUpdates>(entity))
                 {
                     updates = entityManager.GetComponentData<Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular.ReceivedUpdates>(entity).Updates;
-
                 }
                 else
                 {
@@ -164,6 +172,7 @@ namespace Generated.Improbable.Gdk.Tests
 
                 updates.Add(update);
 
+                Profiler.EndSample();
             }
 
             public override void OnAuthorityChange(AuthorityChangeOp op)
@@ -173,7 +182,9 @@ namespace Generated.Improbable.Gdk.Tests
                     return;
                 }
 
+                Profiler.BeginSample("ExhaustiveBlittableSingular");
                 ApplyAuthorityChange(entity, op.Authority, op.EntityId);
+                Profiler.EndSample();
             }
 
             public override void OnCommandRequest(CommandRequestOp op)
@@ -183,6 +194,7 @@ namespace Generated.Improbable.Gdk.Tests
                     return;
                 }
 
+                Profiler.BeginSample("ExhaustiveBlittableSingular");
                 var commandIndex = op.Request.SchemaData.Value.GetCommandIndex();
                 switch (commandIndex)
                 {
@@ -195,10 +207,13 @@ namespace Generated.Improbable.Gdk.Tests
                         );
                         break;
                 }
+
+                Profiler.EndSample();
             }
 
             public override void OnCommandResponse(CommandResponseOp op)
             {
+                Profiler.BeginSample("ExhaustiveBlittableSingular");
                 var commandIndex = op.Response.CommandIndex;
                 switch (commandIndex)
                 {
@@ -211,6 +226,8 @@ namespace Generated.Improbable.Gdk.Tests
                         );
                         break;
                 }
+
+                Profiler.EndSample();
             }
 
             public override void AddCommandComponents(Unity.Entities.Entity entity)
@@ -307,7 +324,6 @@ namespace Generated.Improbable.Gdk.Tests
                     .WithField("Component", "Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular")
                 );
             }
-
         }
 
         internal class ComponentReplicator : ComponentReplicationHandler
@@ -321,7 +337,7 @@ namespace Generated.Improbable.Gdk.Tests
             };
 
 
-            private EntityArchetypeQuery[] CommandQueries =
+            private readonly EntityArchetypeQuery[] CommandQueries =
             {
             };
 
@@ -332,6 +348,8 @@ namespace Generated.Improbable.Gdk.Tests
 
             public override void ExecuteReplication(ComponentGroup replicationGroup, global::Improbable.Worker.Core.Connection connection)
             {
+                Profiler.BeginSample("ExhaustiveBlittableSingular");
+
                 var entityIdDataArray = replicationGroup.GetComponentDataArray<SpatialEntityId>();
                 var componentDataArray = replicationGroup.GetComponentDataArray<Generated.Improbable.Gdk.Tests.ExhaustiveBlittableSingular.Component>();
 
@@ -352,11 +370,12 @@ namespace Generated.Improbable.Gdk.Tests
                         componentDataArray[i] = data;
                     }
                 }
+
+                Profiler.EndSample();
             }
 
             public override void SendCommands(SpatialOSSendSystem sendSystem, global::Improbable.Worker.Core.Connection connection)
             {
-                var entityType = sendSystem.GetArchetypeChunkEntityType();
             }
         }
 

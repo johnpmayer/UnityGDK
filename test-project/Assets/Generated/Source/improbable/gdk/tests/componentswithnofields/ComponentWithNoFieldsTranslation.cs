@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Profiling;
 using Unity.Mathematics;
 using Unity.Entities;
 using Unity.Collections;
@@ -46,6 +47,7 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                     return;
                 }
 
+                Profiler.BeginSample("ComponentWithNoFields");
                 var data = Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields.Serialization.Deserialize(op.Data.SchemaData.Value.GetFields(), World);
                 data.DirtyBit = false;
                 entityManager.AddComponentData(entity, data);
@@ -84,6 +86,8 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                         .WithField("Component", "Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields")
                     );
                 }
+
+                Profiler.EndSample();
             }
 
             public override void OnRemoveComponent(RemoveComponentOp op)
@@ -92,6 +96,8 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                 {
                     return;
                 }
+
+                Profiler.BeginSample("ComponentWithNoFields");
 
                 entityManager.RemoveComponent<Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields.Component>(entity);
 
@@ -111,6 +117,8 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                         .WithField("Component", "Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields")
                     );
                 }
+
+                Profiler.EndSample();
             }
 
             public override void OnComponentUpdate(ComponentUpdateOp op)
@@ -120,6 +128,7 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                     return;
                 }
 
+                Profiler.BeginSample("ComponentWithNoFields");
                 if (entityManager.HasComponent<NotAuthoritative<Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields.Component>>(entity))
                 {
                     var data = entityManager.GetComponentData<Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields.Component>(entity);
@@ -134,7 +143,6 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                 if (entityManager.HasComponent<Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields.ReceivedUpdates>(entity))
                 {
                     updates = entityManager.GetComponentData<Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields.ReceivedUpdates>(entity).Updates;
-
                 }
                 else
                 {
@@ -149,6 +157,7 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
 
                 updates.Add(update);
 
+                Profiler.EndSample();
             }
 
             public override void OnAuthorityChange(AuthorityChangeOp op)
@@ -158,7 +167,9 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                     return;
                 }
 
+                Profiler.BeginSample("ComponentWithNoFields");
                 ApplyAuthorityChange(entity, op.Authority, op.EntityId);
+                Profiler.EndSample();
             }
 
             public override void OnCommandRequest(CommandRequestOp op)
@@ -168,6 +179,7 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                     return;
                 }
 
+                Profiler.BeginSample("ComponentWithNoFields");
                 var commandIndex = op.Request.SchemaData.Value.GetCommandIndex();
                 switch (commandIndex)
                 {
@@ -180,10 +192,13 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                         );
                         break;
                 }
+
+                Profiler.EndSample();
             }
 
             public override void OnCommandResponse(CommandResponseOp op)
             {
+                Profiler.BeginSample("ComponentWithNoFields");
                 var commandIndex = op.Response.CommandIndex;
                 switch (commandIndex)
                 {
@@ -196,6 +211,8 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                         );
                         break;
                 }
+
+                Profiler.EndSample();
             }
 
             public override void AddCommandComponents(Unity.Entities.Entity entity)
@@ -292,7 +309,6 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                     .WithField("Component", "Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields")
                 );
             }
-
         }
 
         internal class ComponentReplicator : ComponentReplicationHandler
@@ -306,7 +322,7 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
             };
 
 
-            private EntityArchetypeQuery[] CommandQueries =
+            private readonly EntityArchetypeQuery[] CommandQueries =
             {
             };
 
@@ -317,6 +333,8 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
 
             public override void ExecuteReplication(ComponentGroup replicationGroup, global::Improbable.Worker.Core.Connection connection)
             {
+                Profiler.BeginSample("ComponentWithNoFields");
+
                 var entityIdDataArray = replicationGroup.GetComponentDataArray<SpatialEntityId>();
                 var componentDataArray = replicationGroup.GetComponentDataArray<Generated.Improbable.Gdk.Tests.ComponentsWithNoFields.ComponentWithNoFields.Component>();
 
@@ -337,11 +355,12 @@ namespace Generated.Improbable.Gdk.Tests.ComponentsWithNoFields
                         componentDataArray[i] = data;
                     }
                 }
+
+                Profiler.EndSample();
             }
 
             public override void SendCommands(SpatialOSSendSystem sendSystem, global::Improbable.Worker.Core.Connection connection)
             {
-                var entityType = sendSystem.GetArchetypeChunkEntityType();
             }
         }
 
