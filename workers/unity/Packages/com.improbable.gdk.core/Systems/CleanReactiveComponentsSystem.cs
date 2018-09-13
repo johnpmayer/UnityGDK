@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Improbable.Gdk.Core.CodegenAdapters;
 using Unity.Entities;
+using UnityEngine.Profiling;
 
 namespace Improbable.Gdk.Core
 {
@@ -18,10 +19,10 @@ namespace Improbable.Gdk.Core
 
         // Here to prevent adding an action for the same type multiple times
         private readonly HashSet<Type> typesToRemove = new HashSet<Type>();
-        
+
         private readonly List<(ComponentGroup, ComponentType)> componentGroupsToRemove = new List<(ComponentGroup, ComponentType)>();
         private readonly List<(Entity, ComponentType)> componentsToRemove = new List<(Entity, ComponentType)>();
-        
+
         protected override void OnCreateManager(int capacity)
         {
             base.OnCreateManager(capacity);
@@ -86,14 +87,36 @@ namespace Improbable.Gdk.Core
             var buffer = PostUpdateCommands;
             foreach (var cleanup in componentCleanups)
             {
+                Profiler.BeginSample("CleanupUpdates");
                 cleanup.Handler.CleanupUpdates(cleanup.UpdateGroup, ref buffer);
+                Profiler.EndSample();
+            }
+
+            foreach (var cleanup in componentCleanups)
+            {
+                Profiler.BeginSample("CleanupEvents");
                 cleanup.Handler.CleanupEvents(cleanup.EventGroups, ref buffer);
+                Profiler.EndSample();
+            }
+
+            foreach (var cleanup in componentCleanups)
+            {
+                Profiler.BeginSample("CleanupAuthChanges");
                 cleanup.Handler.CleanupAuthChanges(cleanup.AuthorityChangesGroup, ref buffer);
+                Profiler.EndSample();
+            }
+
+            foreach (var cleanup in componentCleanups)
+            {
+                Profiler.BeginSample("CleanupCommands");
                 cleanup.Handler.CleanupCommands(cleanup.CommandsGroups, ref buffer);
+                Profiler.EndSample();
             }
 
             // Clean components with RemoveAtEndOfTick attribute
+            Profiler.BeginSample("RemoveComponents");
             RemoveComponents();
+            Profiler.EndSample();
         }
 
         private struct ComponentCleanup
@@ -105,9 +128,11 @@ namespace Improbable.Gdk.Core
             public ComponentGroup[] CommandsGroups;
         }
 
+        // TODO UTY-1188 Rewrite with com.unity.entities@preview12 RemoveComponent
         private void RemoveComponents()
         {
             componentsToRemove.Clear();
+            Profiler.BeginSample("FindComponents");
             foreach ((ComponentGroup componentGroup, ComponentType type) in componentGroupsToRemove)
             {
                 if (componentGroup.IsEmptyIgnoreFilter)
@@ -122,10 +147,15 @@ namespace Improbable.Gdk.Core
                 }
             }
 
+            Profiler.EndSample();
+
+            Profiler.BeginSample("RemoveComponents");
             foreach ((Entity entity, ComponentType type) in componentsToRemove)
             {
                 EntityManager.RemoveComponent(entity, type);
             }
+
+            Profiler.EndSample();
         }
     }
 }

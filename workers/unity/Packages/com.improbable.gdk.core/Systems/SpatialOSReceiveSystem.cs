@@ -7,6 +7,7 @@ using Improbable.Worker;
 using Improbable.Worker.Core;
 using Unity.Entities;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Improbable.Gdk.Core
 {
@@ -88,6 +89,7 @@ namespace Improbable.Gdk.Core
                 return;
             }
 
+            Profiler.BeginSample("OnAddEntity");
             var entity = EntityManager.CreateEntity();
             EntityManager.AddComponentData(entity, new SpatialEntityId
             {
@@ -102,6 +104,7 @@ namespace Improbable.Gdk.Core
 
             WorldCommands.AddWorldCommandRequesters(World, EntityManager, entity);
             worker.EntityIdToEntity.Add(entityId, entity);
+            Profiler.EndSample();
         }
 
         private void OnRemoveEntity(RemoveEntityOp op)
@@ -115,9 +118,11 @@ namespace Improbable.Gdk.Core
                 return;
             }
 
+            Profiler.BeginSample("OnRemoveEntity");
             WorldCommands.DeallocateWorldCommandRequesters(EntityManager, entity);
             EntityManager.DestroyEntity(worker.EntityIdToEntity[entityId]);
             worker.EntityIdToEntity.Remove(entityId);
+            Profiler.EndSample();
         }
 
         private void OnDisconnect(DisconnectOp op)
@@ -138,7 +143,9 @@ namespace Improbable.Gdk.Core
                 return;
             }
 
+            Profiler.BeginSample("OnAddComponent");
             specificDispatcher.OnAddComponent(op);
+            Profiler.EndSample();
         }
 
         private void OnRemoveComponent(RemoveComponentOp op)
@@ -151,7 +158,9 @@ namespace Improbable.Gdk.Core
                 return;
             }
 
+            Profiler.BeginSample("OnRemoveComponent");
             specificDispatcher.OnRemoveComponent(op);
+            Profiler.EndSample();
         }
 
         private void OnComponentUpdate(ComponentUpdateOp op)
@@ -164,7 +173,9 @@ namespace Improbable.Gdk.Core
                 return;
             }
 
+            Profiler.BeginSample("OnComponentUpdate");
             specificDispatcher.OnComponentUpdate(op);
+            Profiler.EndSample();
         }
 
         private void OnAuthorityChange(AuthorityChangeOp op)
@@ -177,7 +188,9 @@ namespace Improbable.Gdk.Core
                 return;
             }
 
+            Profiler.BeginSample("OnAuthorityChange");
             specificDispatcher.OnAuthorityChange(op);
+            Profiler.EndSample();
         }
 
         private void OnCommandRequest(CommandRequestOp op)
@@ -190,7 +203,9 @@ namespace Improbable.Gdk.Core
                 return;
             }
 
+            Profiler.BeginSample("OnCommandRequest");
             specificDispatcher.OnCommandRequest(op);
+            Profiler.EndSample();
         }
 
         private void OnCommandResponse(CommandResponseOp op)
@@ -203,7 +218,9 @@ namespace Improbable.Gdk.Core
                 return;
             }
 
+            Profiler.BeginSample("OnCommandResponse");
             specificDispatcher.OnCommandResponse(op);
+            Profiler.EndSample();
         }
 
         private void OnCreateEntityResponse(CreateEntityResponseOp op)
