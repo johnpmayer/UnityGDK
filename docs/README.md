@@ -10,6 +10,7 @@ Once you are comfortable with the GDK and want to start a separate project, look
 
 ##### Getting started
 * [Installation and setup](setup-and-installing.md)
+* [Get started with Playground project](content/get-started-playground.md)
 * [Building and deploying your game](content/build-and-deploy.md)
 
 ##### Concepts and features
