@@ -208,7 +208,7 @@ namespace Improbable.Gdk.Core
             Dispose();
         }
 
-        private static string CreateNewWorkerId(string workerType)
+        protected static string CreateNewWorkerId(string workerType)
         {
             return $"{workerType}-{Guid.NewGuid()}";
         }
