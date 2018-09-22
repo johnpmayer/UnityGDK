@@ -7,7 +7,17 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 {
     public class WorkerBuildData
     {
-        private readonly WorkerPlatform workerPlatform;
+        public readonly string WorkerPlatform;
+
+        public string PackageName => $"{WorkerPlatform}@{BuildTargetName}";
+        
+        private string BuildTargetName => BuildTargetNames[buildTarget];
+
+        public string BuildScratchDirectory =>
+            PathUtils.Combine(PathUtils.BuildScratchDirectory, PackageName, ExecutableName).ToUnityPath();
+
+        private string ExecutableName => PackageName + BuildPlatformExtensions[buildTarget];
+                
         private readonly BuildTarget buildTarget;
 
         private static readonly Dictionary<BuildTarget, string> BuildTargetNames =
@@ -28,26 +38,15 @@ namespace Improbable.Gdk.BuildSystem.Configuration
                 { BuildTarget.StandaloneOSX, "" }
             };
 
-        public WorkerBuildData(WorkerPlatform workerPlatform, BuildTarget buildTarget)
+        public WorkerBuildData(string workerPlatform, BuildTarget buildTarget)
         {
             if (!BuildTargetNames.ContainsKey(buildTarget))
             {
                 throw new ArgumentException("Unsupported BuildPlatform " + buildTarget);
             }
 
-            this.workerPlatform = workerPlatform;
+            WorkerPlatform = workerPlatform;
             this.buildTarget = buildTarget;
         }
-
-        private string BuildTargetName => BuildTargetNames[buildTarget];
-
-        public string BuildScratchDirectory =>
-            PathUtil.Combine(BuildPaths.BuildScratchDirectory, PackageName, ExecutableName).ToUnityPath();
-
-        public string WorkerPlatformName => workerPlatform.ToString();
-
-        private string ExecutableName => PackageName + BuildPlatformExtensions[buildTarget];
-
-        public string PackageName => string.Format("{0}@{1}", workerPlatform, BuildTargetName);
     }
 }

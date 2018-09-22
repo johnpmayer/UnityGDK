@@ -6,9 +6,9 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 {
     internal class SceneItem
     {
-        public readonly SceneAsset SceneAsset;
         public bool Included;
         private readonly bool exists;
+        public readonly SceneAsset SceneAsset;
 
         public SceneItem(SceneAsset sceneAsset, bool included, SceneAsset[] inAssetDatabase)
         {

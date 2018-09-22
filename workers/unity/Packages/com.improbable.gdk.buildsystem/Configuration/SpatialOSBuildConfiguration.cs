@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Improbable.Gdk.BuildSystem.Configuration
 {
     [CreateAssetMenu(fileName = "SpatialOS Build Configuration", menuName = CreateMenuPath)]
-    public class SpatialOSBuildConfiguration : SingletonScriptableObject<SpatialOSBuildConfiguration>
+    public class SpatialOSBuildConfiguration : ScriptableSingleton<SpatialOSBuildConfiguration>
     {
         internal const string CreateMenuPath = "SpatialOS/Build Configuration";
 
@@ -15,10 +15,9 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
         [SerializeField] public List<WorkerBuildConfiguration> WorkerBuildConfigurations;
 
-        public override void OnEnable()
-        {
-            base.OnEnable();
 
+        private void Awake()
+        {
             if (!isInitialised)
             {
                 ResetToDefault();
@@ -29,38 +28,46 @@ namespace Improbable.Gdk.BuildSystem.Configuration
                 UpdateEditorScenesForBuild();
             }
         }
+        
+        protected bool IsAnAsset()
+        {
+            var assetPath = AssetDatabase.GetAssetPath(this);
+
+            // If there is an asset path, it is in assets.
+            return !string.IsNullOrEmpty(assetPath);
+        }
 
         private void ResetToDefault()
         {
             // Build default settings
             var client = new WorkerBuildConfiguration()
             {
-                WorkerPlatform = WorkerPlatform.UnityClient,
+                WorkerPlatform = "UnityClient",
                 ScenesForWorker = AssetDatabase.FindAssets("t:Scene")
                     .Select(AssetDatabase.GUIDToAssetPath)
-                    .Where(path => path.Contains(WorkerPlatform.UnityClient.ToString()))
+                    .Where(path => path.Contains("UnityClient"))
                     .Select(AssetDatabase.LoadAssetAtPath<SceneAsset>).ToArray(),
                 LocalBuildConfig = new BuildEnvironmentConfig()
                 {
-                    BuildPlatforms = SpatialBuildPlatforms.Current,
+                    BuildPlatforms = BuildEnvironmentConfig.GetCurrentBuildPlatform(),
                     BuildOptions = BuildOptions.Development
                 },
                 CloudBuildConfig = new BuildEnvironmentConfig()
                 {
-                    BuildPlatforms = SpatialBuildPlatforms.Current
+                    BuildPlatforms = BuildEnvironmentConfig.GetCurrentBuildPlatform(),
                 }
             };
 
             var worker = new WorkerBuildConfiguration()
             {
-                WorkerPlatform = WorkerPlatform.UnityGameLogic,
+                WorkerPlatform = "UnityGameLogic",
                 ScenesForWorker = AssetDatabase.FindAssets("t:Scene")
                     .Select(AssetDatabase.GUIDToAssetPath)
-                    .Where(path => path.Contains(WorkerPlatform.UnityGameLogic.ToString()))
+                    .Where(path => path.Contains("UnityGameLogic"))
                     .Select(AssetDatabase.LoadAssetAtPath<SceneAsset>).ToArray(),
                 LocalBuildConfig = new BuildEnvironmentConfig()
                 {
-                    BuildPlatforms = SpatialBuildPlatforms.Current,
+                    BuildPlatforms = BuildEnvironmentConfig.GetCurrentBuildPlatform(),
                     BuildOptions = BuildOptions.EnableHeadlessMode
                 },
                 CloudBuildConfig = new BuildEnvironmentConfig()
@@ -92,7 +99,7 @@ namespace Improbable.Gdk.BuildSystem.Configuration
             }
         }
 
-        private SceneAsset[] GetScenesForWorker(WorkerPlatform workerPlatform)
+        private SceneAsset[] GetScenesForWorker(string workerPlatform)
         {
             WorkerBuildConfiguration configurationForWorker = null;
 
@@ -120,8 +127,7 @@ namespace Improbable.Gdk.BuildSystem.Configuration
             };
         }
 
-        public BuildEnvironmentConfig GetEnvironmentConfigForWorker(WorkerPlatform platform,
-            BuildEnvironment targetEnvironment)
+        public BuildEnvironmentConfig GetEnvironmentConfigForWorker(string platform, BuildEnvironment targetEnvironment)
         {
             var config = WorkerBuildConfigurations.FirstOrDefault(x => x.WorkerPlatform == platform);
             if (config == null)
@@ -132,7 +138,7 @@ namespace Improbable.Gdk.BuildSystem.Configuration
             return config.GetEnvironmentConfig(targetEnvironment);
         }
 
-        public string[] GetScenePathsForWorker(WorkerPlatform workerType)
+        public string[] GetScenePathsForWorker(string workerType)
         {
             return GetScenesForWorker(workerType)
                 .Where(sceneAsset => sceneAsset != null)

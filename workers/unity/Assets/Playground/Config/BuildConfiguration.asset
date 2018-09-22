@@ -13,23 +13,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isInitialised: 1
   WorkerBuildConfigurations:
-  - WorkerPlatform:
-      name: UnityClient
+  - WorkerPlatform: UnityClient
     ScenesForWorker:
     - {fileID: 102900000, guid: 3f6e3d421576ca644b07380deacd35bb, type: 3}
     LocalBuildConfig:
-      BuildPlatforms: 1
+      BuildPlatforms: 16
       BuildOptions: 1
     CloudBuildConfig:
-      BuildPlatforms: 1
-      BuildOptions: 1
-  - WorkerPlatform:
-      name: UnityGameLogic
+      BuildPlatforms: 16
+      BuildOptions: 0
+  - WorkerPlatform: UnityGameLogic
     ScenesForWorker:
     - {fileID: 102900000, guid: f5fda56aad5d91d408ff123b26ab6ade, type: 3}
     LocalBuildConfig:
-      BuildPlatforms: 1
-      BuildOptions: 1
+      BuildPlatforms: 16
+      BuildOptions: 16384
     CloudBuildConfig:
       BuildPlatforms: 8
       BuildOptions: 16384

@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Improbable.Gdk.BuildSystem.Configuration
 {
     [CustomEditor(typeof(SpatialOSBuildConfiguration))]
-    public class SpatialOSBuildConfigurationEditor : UnityEditor.Editor
+    public class SpatialOSBuildConfigurationEditor : Editor
     {
         private const int ScreenWidthForHorizontalLayout = 450;
 
@@ -23,7 +23,12 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
         private bool scenesChanged;
         private string workerTypeName = "WorkerType";
-
+        
+        private static readonly GUIContent AddWorkerTypeButtonContents = new GUIContent("+", "AddWorkerType");
+        private static readonly GUIContent RemoveWorkerTypeButtonContents = new GUIContent("-", "RemoveWorkerType");
+        private static readonly GUIContent MoveUpButtonContents = new GUIContent("^", "Move item up");
+        private static readonly GUIContent MoveDownButtonContents = new GUIContent("v", "Move item down");
+        
         public override void OnInspectorGUI()
         {
             var workerConfiguration = (SpatialOSBuildConfiguration) target;
@@ -36,22 +41,22 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
             if (GUI.Button(buttonRect, AddWorkerTypeButtonContents))
             {
-                var workerType = new WorkerPlatform(workerTypeName);
-                var exists = workerConfiguration.WorkerBuildConfigurations.Any(x => x.WorkerPlatform == workerType);
+                var exists = workerConfiguration.WorkerBuildConfigurations.Any(x => x.WorkerPlatform == workerTypeName);
                 if (!exists)
                 {
                     var config = new WorkerBuildConfiguration
                     {
-                        WorkerPlatform = new WorkerPlatform(workerTypeName),
+                        WorkerPlatform = workerTypeName,
                         ScenesForWorker = new SceneAsset[] { },
                         LocalBuildConfig = new BuildEnvironmentConfig()
                         {
-                            BuildPlatforms = SpatialBuildPlatforms.Current,
-                            BuildOptions = BuildOptions.Development
+                            BuildPlatforms = BuildEnvironmentConfig.GetCurrentBuildPlatform(),
+                            BuildOptions = BuildOptions.Development,
                         },
                         CloudBuildConfig = new BuildEnvironmentConfig()
                         {
-                            BuildPlatforms = SpatialBuildPlatforms.Current
+                            BuildPlatforms = BuildEnvironmentConfig.GetCurrentBuildPlatform(),
+                            BuildOptions = BuildOptions.EnableHeadlessMode,
                         }
                     };
                     workerConfiguration.WorkerBuildConfigurations.Add(config);
@@ -81,7 +86,7 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
         private bool DrawWorkerConfiguration(WorkerBuildConfiguration configurationForWorker)
         {
-            var platformName = configurationForWorker.WorkerPlatform.ToString();
+            var platformName = configurationForWorker.WorkerPlatform;
 
             EditorGUILayout.BeginHorizontal();
             configurationForWorker.ShowFoldout =
@@ -185,12 +190,7 @@ namespace Improbable.Gdk.BuildSystem.Configuration
             DrawEnvironmentInspector(BuildEnvironment.Cloud, configurationForWorker);
         }
 
-        private static TEnum EnumFlagsToggleField<TEnum>(TEnum source) where TEnum : struct, IConvertible
-        {
-            return EnumFlagsToggleField(source, SimpleToString);
-        }
-
-        private static TEnum EnumFlagsToggleField<TEnum>(TEnum source, Func<TEnum, string> nameFunction)
+        private static TEnum EnumFlagsToggleField<TEnum>(TEnum source)
             where TEnum : struct, IConvertible
         {
             if (!typeof(TEnum).IsEnum)
@@ -218,7 +218,7 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
                         var hasFlag = (sourceBitValue & targetBitValue) != 0;
 
-                        var newFlag = EditorGUILayout.ToggleLeft(nameFunction(enumValue), hasFlag);
+                        var newFlag = EditorGUILayout.ToggleLeft(enumValue.ToString(CultureInfo.InvariantCulture), hasFlag);
 
                         if (hasFlag != newFlag)
                         {
@@ -251,19 +251,40 @@ namespace Improbable.Gdk.BuildSystem.Configuration
         {
             using (IndentLevelScope(1))
             {
-                var buildOptionsString = EnumFlagToString(environmentConfiguration.BuildOptions);
-
                 EditorGUI.BeginChangeCheck();
 
                 var showBuildOptions = EditorGUILayout.Foldout(environmentConfiguration.ShowBuildOptions,
-                    "Build Options: " + buildOptionsString);
-
+                    "Build Options:");
                 var newBuildOptions = environmentConfiguration.BuildOptions;
-
                 if (showBuildOptions)
                 {
-                    newBuildOptions = EnumFlagsToggleField(environmentConfiguration.BuildOptions);
+                    using (IndentLevelScope(1))
+                    {
+                        var indentedHelpBox =
+                            new GUIStyle(EditorStyles.helpBox) { margin = { left = EditorGUI.indentLevel * 16 } };
+
+                        using (new EditorGUILayout.VerticalScope(indentedHelpBox))
+                        using (IndentLevelScope(-EditorGUI.indentLevel))
+                        {
+                            var enableDevelopmentBuild = GUILayout.Toggle(
+                                (newBuildOptions & BuildOptions.Development) != 0,
+                                "Development Build");
+                            if (enableDevelopmentBuild)
+                            {
+                                environmentConfiguration.BuildOptions |= BuildOptions.Development;
+                            }
+
+                            var enableHeadless = GUILayout.Toggle(
+                                (newBuildOptions & BuildOptions.EnableHeadlessMode) != 0,
+                                "Headless Mode");
+                            if (enableHeadless)
+                            {
+                                environmentConfiguration.BuildOptions |= BuildOptions.EnableHeadlessMode;
+                            }
+                        }
+                    }
                 }
+
 
                 if ((newBuildOptions & BuildOptions.EnableHeadlessMode) != 0 &&
                     (newBuildOptions & BuildOptions.Development) != 0)
@@ -286,18 +307,8 @@ namespace Improbable.Gdk.BuildSystem.Configuration
                 }
             }
         }
-
-        private static string EnumFlagToString<TEnum>(TEnum value) where TEnum : struct, IConvertible
-        {
-            return EnumFlagToString(value, SimpleToString);
-        }
-
-        private static string SimpleToString<TValue>(TValue activeValue) where TValue : IConvertible
-        {
-            return activeValue.ToString(CultureInfo.InvariantCulture);
-        }
-
-        private static string EnumFlagToString<TEnum>(TEnum value, Func<TEnum, string> nameFunction)
+        
+        private static string EnumFlagToString<TEnum>(TEnum value)
             where TEnum : struct, IConvertible
         {
             if (!typeof(TEnum).IsEnum)
@@ -320,15 +331,14 @@ namespace Improbable.Gdk.BuildSystem.Configuration
                 enumNonZeroValues
                     .Where(enumValue =>
                         (sourceBitValue & enumValue.ToInt32(NumberFormatInfo.CurrentInfo)) != 0)
-                    .Select(nameFunction).ToArray());
+                    .Select(enumValue => enumValue.ToString(CultureInfo.InvariantCulture)).ToArray());
         }
 
         private void ConfigureBuildPlatforms(BuildEnvironmentConfig environmentConfiguration)
         {
             using (IndentLevelScope(1))
             {
-                var buildPlatformsString = EnumFlagToString(environmentConfiguration.BuildPlatforms,
-                    BuildPlatformToString);
+                var buildPlatformsString = EnumFlagToString(environmentConfiguration.BuildPlatforms);
 
                 EditorGUI.BeginChangeCheck();
 
@@ -339,25 +349,9 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
                 if (showBuildPlatforms)
                 {
-                    newBuildPlatforms = EnumFlagsToggleField(environmentConfiguration.BuildPlatforms,
-                        BuildPlatformToString);
+                    newBuildPlatforms = EnumFlagsToggleField(environmentConfiguration.BuildPlatforms);
                 }
 
-                var currentAdjustedPlatforms = newBuildPlatforms;
-
-                if ((currentAdjustedPlatforms & SpatialBuildPlatforms.Current) != 0)
-                {
-                    currentAdjustedPlatforms &= ~SpatialBuildPlatforms.Current;
-                    currentAdjustedPlatforms |= WorkerBuilder.GetCurrentBuildPlatform();
-                }
-
-                if ((currentAdjustedPlatforms & SpatialBuildPlatforms.Windows32) != 0 &&
-                    (currentAdjustedPlatforms & SpatialBuildPlatforms.Windows64) != 0)
-                {
-                    EditorGUILayout.HelpBox(
-                        "\n" + WorkerBuilder.IncompatibleWindowsPlatformsErrorMessage + "\n",
-                        MessageType.Error);
-                }
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -370,22 +364,7 @@ namespace Improbable.Gdk.BuildSystem.Configuration
                 }
             }
         }
-
-        private static string BuildPlatformToString(SpatialBuildPlatforms value)
-        {
-            if (value == SpatialBuildPlatforms.Current)
-            {
-                return string.Format("Current ({0})", WorkerBuilder.GetCurrentBuildPlatform());
-            }
-
-            return value.ToString();
-        }
-
-        private static readonly GUIContent AddWorkerTypeButtonContents = new GUIContent("+", "AddWorkerType");
-        private static readonly GUIContent RemoveWorkerTypeButtonContents = new GUIContent("-", "RemoveWorkerType");
-        private static readonly GUIContent MoveUpButtonContents = new GUIContent("^", "Move item up");
-        private static readonly GUIContent MoveDownButtonContents = new GUIContent("v", "Move item down");
-
+        
         private static void DrawIndentedList<T>(IList<T> list,
             ReorderableListFlags flags, Func<Rect, T, T> drawer)
         {

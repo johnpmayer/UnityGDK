@@ -1,0 +1,80 @@
+﻿<#@ template language="C#" #>
+<#@ output extension=".cs" #>
+<#
+    var generatedHeader = CommonGeneratorUtils.GetGeneratedHeader();
+    var workerTypeList = GetWorkerTypes();
+#>
+<#= generatedHeader #>
+
+using Improbable.Gdk.BuildSystem;
+using Improbable.Gdk.BuildSystem.Configuration;
+using Improbable.Gdk.Tools;
+using UnityEditor;
+using UnityEngine;
+
+namespace <#= qualifiedNamespace #>
+{ 
+    internal static class BuildWorkerMenu
+    {
+        private const string ParentMenu = "SpatialOS";
+        private const string LocalMenu = "Build for local";
+        private const string CloudMenu = "Build for cloud";
+
+        private static readonly string[] allWorkers = 
+        {
+<# foreach (var workerType in workerTypeList) { #>
+            "<#= workerType #>",
+<# } #>
+        };
+
+<# foreach (var workerType in workerTypeList) { #>
+        [MenuItem(ParentMenu + "/" + LocalMenu + "/<#= workerType #>")]
+        public static void BuildLocal<#= workerType #>()
+        {
+            MenuBuild(BuildEnvironment.Local, "<#= workerType #>");
+        }
+
+        [MenuItem(ParentMenu + "/" + CloudMenu + "/<#= workerType #>")]
+        public static void BuildCloud<#= workerType #>()
+        {
+            MenuBuild(BuildEnvironment.Cloud, "<#= workerType #>");
+        }
+
+<# } #>
+
+        [MenuItem(ParentMenu + "/" + LocalMenu + "/All workers")]
+        public static void BuildLocalAll()
+        {
+            MenuBuild(BuildEnvironment.Local, allWorkers);
+        }
+
+        [MenuItem(ParentMenu + "/" + CloudMenu + "/All workers")]
+        public static void BuildCloudAll()
+        {
+            MenuBuild(BuildEnvironment.Cloud, allWorkers);
+        }
+
+        [MenuItem(ParentMenu + "/Clean all workers")]
+        public static void Clean()
+        {
+            WorkerBuilder.Clean();
+            Debug.Log("Clean completed");
+        }
+        
+        private static void MenuBuild(BuildEnvironment environment, params string[] platforms)
+        {
+            // Delaying build by a frame to ensure the editor has re-rendered the UI to avoid odd glitches.
+            EditorApplication.delayCall += () =>
+            {
+                LocalLaunch.BuildConfig();
+
+                foreach (var platform in platforms)
+                {
+                    WorkerBuilder.BuildWorkerForEnvironment(platform, environment);
+                }
+
+                Debug.LogFormat("Completed build for {0} target", environment);
+            };
+        }
+    }
+}
