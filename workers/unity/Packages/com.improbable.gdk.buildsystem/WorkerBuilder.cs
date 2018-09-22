@@ -16,20 +16,18 @@ namespace Improbable.Gdk.BuildSystem
     {        
         private const string BuildConfigurationMissingErrorMessage =
             "No objects of type SpatialOSBuildConfiguration found in the project.\nPlease create one using Assets/Create/" +
-            SpatialOSBuildConfiguration.CreateMenuPath + ".";
+            EditorConfig.ParentMenu + "/" + EditorConfig.BuildConfigurationMenu + ".";
         
         private static readonly string PlayerBuildDirectory =
             Path.GetFullPath(PathUtils.Combine(Directory.GetCurrentDirectory(), PathUtils.AssetDatabaseDirectory,
                 "worker"));
 
-        public static void BuildWorkerForEnvironment(string workerPlatform, BuildEnvironment targetEnvironment)
+        public static void BuildWorkerForEnvironment(string workerType, BuildEnvironment targetEnvironment)
         {
-            var spatialOSBuildConfiguration = GetBuildConfiguration();
-            var environmentConfig =
-                spatialOSBuildConfiguration.GetEnvironmentConfigForWorker(workerPlatform, targetEnvironment);
+            var spatialOSBuildConfiguration = SpatialOSBuildConfiguration.instance;
+            var environmentConfig = spatialOSBuildConfiguration.GetEnvironmentConfigForWorker(workerType, targetEnvironment);
             var buildPlatforms = environmentConfig.BuildPlatforms;
             var buildOptions = environmentConfig.BuildOptions;
-
             
             if (!Directory.Exists(PlayerBuildDirectory))
             {
@@ -38,7 +36,7 @@ namespace Improbable.Gdk.BuildSystem
 
             foreach (var unityBuildTarget in GetUnityBuildTargets(buildPlatforms))
             {
-                BuildWorkerForTarget(workerPlatform, unityBuildTarget, buildOptions, targetEnvironment);
+                BuildWorkerForTarget(workerType, unityBuildTarget, buildOptions, targetEnvironment);
             }
         }
         
@@ -46,20 +44,6 @@ namespace Improbable.Gdk.BuildSystem
         {
             FileUtil.DeleteFileOrDirectory(PlayerBuildDirectory);
             FileUtil.DeleteFileOrDirectory(PathUtils.BuildScratchDirectory);
-        }
-        
-        /// <returns>An instance of SpatialOSBuildConfiguration if one exists.</returns>
-        /// <exception cref="Exception">If no assets exist of type SpatialOSBuildConfiguration</exception>
-        internal static SpatialOSBuildConfiguration GetBuildConfiguration()
-        {
-            var spatialOSBuildConfiguration = SpatialOSBuildConfiguration.instance;
-
-            if (spatialOSBuildConfiguration == null)
-            {
-                throw new Exception(BuildConfigurationMissingErrorMessage);
-            }
-
-            return spatialOSBuildConfiguration;
         }
 
         private static IEnumerable<BuildTarget> GetUnityBuildTargets(SpatialBuildPlatforms actualPlatforms)
@@ -84,22 +68,22 @@ namespace Improbable.Gdk.BuildSystem
             return result.ToArray();
         }
 
-        private static void BuildWorkerForTarget(string workerPlatform, BuildTarget buildTarget,
+        private static void BuildWorkerForTarget(string workerType, BuildTarget buildTarget,
             BuildOptions buildOptions, BuildEnvironment targetEnvironment)
         {
-            var spatialOSBuildConfiguration = GetBuildConfiguration();
+            var spatialOSBuildConfiguration = SpatialOSBuildConfiguration.instance;
 
             Debug.LogFormat("Building \"{0}\" for worker platform: \"{1}\", environment: \"{2}\"", buildTarget,
-                workerPlatform, targetEnvironment);
+                workerType, targetEnvironment);
 
             var symbols = PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone);
 
             try
             {
-                var workerBuildData = new WorkerBuildData(workerPlatform, buildTarget);
-                var scenes = spatialOSBuildConfiguration.GetScenePathsForWorker(workerPlatform);
+                var workerBuildData = new WorkerBuildData(workerType, buildTarget);
+                var scenes = spatialOSBuildConfiguration.GetScenePathsForWorker(workerType);
 
-                var typeSymbol = $"IMPROBABLE_WORKERTYPE_{workerBuildData.WorkerPlatform}";
+                var typeSymbol = $"IMPROBABLE_WORKERTYPE_{workerBuildData.WorkerType}";
                 var workerSymbols = symbols.Split(';')
                     .Concat(new[] { typeSymbol })
                     .Distinct()
@@ -117,15 +101,14 @@ namespace Improbable.Gdk.BuildSystem
                 var result = BuildPipeline.BuildPlayer(buildPlayerOptions);
                 if (result.summary.result != BuildResult.Succeeded)
                 {
-                    throw new BuildFailedException($"Build failed for {workerPlatform}");
+                    throw new BuildFailedException($"Build failed for {workerType}");
                 }
 
                 var zipPath = Path.GetFullPath(Path.Combine(PlayerBuildDirectory, workerBuildData.PackageName));
 
                 var basePath = PathUtils.Combine(PathUtils.BuildScratchDirectory, workerBuildData.PackageName);
 
-                Zip(zipPath, basePath,
-                    targetEnvironment == BuildEnvironment.Local);
+                Zip(zipPath, basePath, targetEnvironment == BuildEnvironment.Local);
             }
             finally
             {

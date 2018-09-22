@@ -12,9 +12,7 @@ namespace Improbable.Gdk.BuildSystem.Util
     public static class PathUtils
     {
         public static readonly string BuildScratchDirectory = Path.GetFullPath(Path.Combine("build", "worker"));
-        
-        public static readonly string AssetDatabaseDirectory =
-            Combine("..", "..", "build", "assembly").ToUnityPath();
+        public static readonly string AssetDatabaseDirectory = Combine("..", "..", "build", "assembly").ToUnityPath();
         
         /// <summary>
         ///     Combines multiple path components via <c>Path.Combine</c>.

@@ -1,12 +1,13 @@
 using System;
 using UnityEditor;
+using UnityEngine.Serialization;
 
 namespace Improbable.Gdk.BuildSystem.Configuration
 {
     [Serializable]
     public class WorkerBuildConfiguration
     {
-        public string WorkerPlatform;
+        public string WorkerType;
         public SceneAsset[] ScenesForWorker;
 
         public BuildEnvironmentConfig LocalBuildConfig = new BuildEnvironmentConfig();

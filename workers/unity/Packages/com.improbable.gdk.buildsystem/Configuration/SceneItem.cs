@@ -7,8 +7,9 @@ namespace Improbable.Gdk.BuildSystem.Configuration
     internal class SceneItem
     {
         public bool Included;
-        private readonly bool exists;
         public readonly SceneAsset SceneAsset;
+        
+        private readonly bool exists;
 
         public SceneItem(SceneAsset sceneAsset, bool included, SceneAsset[] inAssetDatabase)
         {
@@ -19,19 +20,24 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
         public static SceneItem Drawer(Rect position, SceneItem item)
         {
-            using (item.exists ? null : new GUIColorScope(Color.red))
+            var oldColor = GUI.color;
+            if (!item.exists)
             {
-                var positionWidth = position.width;
-                var labelWidth = GUI.skin.toggle.CalcSize(GUIContent.none).x + 5;
-
-                position.width = labelWidth;
-                item.Included = EditorGUI.Toggle(position, item.Included);
-
-                position.x += labelWidth;
-                position.width = positionWidth - labelWidth;
-
-                EditorGUI.ObjectField(position, item.SceneAsset, typeof(SceneAsset), false);
+                GUI.color = Color.red;
             }
+            
+            var positionWidth = position.width;
+            var labelWidth = GUI.skin.toggle.CalcSize(GUIContent.none).x + 5;
+
+            position.width = labelWidth;
+            item.Included = EditorGUI.Toggle(position, item.Included);
+
+            position.x += labelWidth;
+            position.width = positionWidth - labelWidth;
+
+            EditorGUI.ObjectField(position, item.SceneAsset, typeof(SceneAsset), false);
+
+            GUI.color = oldColor;
 
             return item;
         }

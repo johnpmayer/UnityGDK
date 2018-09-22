@@ -16,7 +16,6 @@ namespace <#= qualifiedNamespace #>
 { 
     internal static class BuildWorkerMenu
     {
-        private const string ParentMenu = "SpatialOS";
         private const string LocalMenu = "Build for local";
         private const string CloudMenu = "Build for cloud";
 
@@ -28,13 +27,13 @@ namespace <#= qualifiedNamespace #>
         };
 
 <# foreach (var workerType in workerTypeList) { #>
-        [MenuItem(ParentMenu + "/" + LocalMenu + "/<#= workerType #>")]
+        [MenuItem(EditorConfig.ParentMenu + "/" + LocalMenu + "/<#= workerType #>")]
         public static void BuildLocal<#= workerType #>()
         {
             MenuBuild(BuildEnvironment.Local, "<#= workerType #>");
         }
 
-        [MenuItem(ParentMenu + "/" + CloudMenu + "/<#= workerType #>")]
+        [MenuItem(EditorConfig.ParentMenu + "/" + CloudMenu + "/<#= workerType #>")]
         public static void BuildCloud<#= workerType #>()
         {
             MenuBuild(BuildEnvironment.Cloud, "<#= workerType #>");
@@ -42,19 +41,19 @@ namespace <#= qualifiedNamespace #>
 
 <# } #>
 
-        [MenuItem(ParentMenu + "/" + LocalMenu + "/All workers")]
+        [MenuItem(EditorConfig.ParentMenu + "/" + LocalMenu + "/All workers")]
         public static void BuildLocalAll()
         {
             MenuBuild(BuildEnvironment.Local, allWorkers);
         }
 
-        [MenuItem(ParentMenu + "/" + CloudMenu + "/All workers")]
+        [MenuItem(EditorConfig.ParentMenu + "/" + CloudMenu + "/All workers")]
         public static void BuildCloudAll()
         {
             MenuBuild(BuildEnvironment.Cloud, allWorkers);
         }
 
-        [MenuItem(ParentMenu + "/Clean all workers")]
+        [MenuItem(EditorConfig.ParentMenu + "/Clean all workers")]
         public static void Clean()
         {
             WorkerBuilder.Clean();

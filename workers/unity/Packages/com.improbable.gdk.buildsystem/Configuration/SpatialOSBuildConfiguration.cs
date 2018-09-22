@@ -1,48 +1,70 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Improbable.Gdk.BuildSystem.Util;
 using UnityEditor;
 using UnityEngine;
 
 namespace Improbable.Gdk.BuildSystem.Configuration
 {
-    [CreateAssetMenu(fileName = "SpatialOS Build Configuration", menuName = CreateMenuPath)]
+    [CreateAssetMenu(fileName = "SpatialOS Build Configuration", 
+        menuName = EditorConfig.ParentMenu + "/" + EditorConfig.BuildConfigurationMenu)]
     public class SpatialOSBuildConfiguration : ScriptableSingleton<SpatialOSBuildConfiguration>
     {
-        internal const string CreateMenuPath = "SpatialOS/Build Configuration";
-
         [SerializeField] private bool isInitialised;
-
         [SerializeField] public List<WorkerBuildConfiguration> WorkerBuildConfigurations;
 
+        public BuildEnvironmentConfig GetEnvironmentConfigForWorker(string workerType, BuildEnvironment targetEnvironment)
+        {
+            var config = WorkerBuildConfigurations.FirstOrDefault(x => x.WorkerType == workerType);
+            if (config == null)
+            {
+                throw new ArgumentException($"Unknown worker type {workerType}.");
+            }
 
-        private void Awake()
+            return config.GetEnvironmentConfig(targetEnvironment);
+        }
+
+        public string[] GetScenePathsForWorker(string workerType)
+        {
+            return GetScenesForWorker(workerType)
+                .Where(sceneAsset => sceneAsset != null)
+                .Select(AssetDatabase.GetAssetPath)
+                .ToArray();
+        }
+        
+        internal void UpdateEditorScenesForBuild()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                EditorBuildSettings.scenes =
+                    WorkerBuildConfigurations.SelectMany(x => GetScenesForWorker(x.WorkerType))
+                        .Select(AssetDatabase.GetAssetPath)
+                        .Distinct()
+                        .Select(scenePath => new EditorBuildSettingsScene(scenePath, true))
+                        .ToArray();
+            };
+        }
+
+        private void OnEnable()
         {
             if (!isInitialised)
             {
                 ResetToDefault();
             }
 
-            if (IsAnAsset())
+            if (!string.IsNullOrEmpty(AssetDatabase.GetAssetPath(this)))
             {
                 UpdateEditorScenesForBuild();
             }
-        }
-        
-        protected bool IsAnAsset()
-        {
-            var assetPath = AssetDatabase.GetAssetPath(this);
-
-            // If there is an asset path, it is in assets.
-            return !string.IsNullOrEmpty(assetPath);
         }
 
         private void ResetToDefault()
         {
             // Build default settings
-            var client = new WorkerBuildConfiguration()
+            var client = new WorkerBuildConfiguration
             {
-                WorkerPlatform = "UnityClient",
+                WorkerType = "UnityClient",
                 ScenesForWorker = AssetDatabase.FindAssets("t:Scene")
                     .Select(AssetDatabase.GUIDToAssetPath)
                     .Where(path => path.Contains("UnityClient"))
@@ -58,9 +80,9 @@ namespace Improbable.Gdk.BuildSystem.Configuration
                 }
             };
 
-            var worker = new WorkerBuildConfiguration()
+            var worker = new WorkerBuildConfiguration
             {
-                WorkerPlatform = "UnityGameLogic",
+                WorkerType = "UnityGameLogic",
                 ScenesForWorker = AssetDatabase.FindAssets("t:Scene")
                     .Select(AssetDatabase.GUIDToAssetPath)
                     .Where(path => path.Contains("UnityGameLogic"))
@@ -86,64 +108,19 @@ namespace Improbable.Gdk.BuildSystem.Configuration
             isInitialised = true;
         }
 
-        private void OnValidate()
-        {
-            if (!isInitialised)
-            {
-                ResetToDefault();
-            }
-
-            if (IsAnAsset())
-            {
-                UpdateEditorScenesForBuild();
-            }
-        }
-
-        private SceneAsset[] GetScenesForWorker(string workerPlatform)
+        private SceneAsset[] GetScenesForWorker(string workerType)
         {
             WorkerBuildConfiguration configurationForWorker = null;
 
             if (WorkerBuildConfigurations != null)
             {
                 configurationForWorker =
-                    WorkerBuildConfigurations.FirstOrDefault(config => config.WorkerPlatform == workerPlatform);
+                    WorkerBuildConfigurations.FirstOrDefault(config => config.WorkerType == workerType);
             }
 
             return configurationForWorker == null
                 ? new SceneAsset[0]
                 : configurationForWorker.ScenesForWorker;
-        }
-
-        internal void UpdateEditorScenesForBuild()
-        {
-            EditorApplication.delayCall += () =>
-            {
-                EditorBuildSettings.scenes =
-                    WorkerBuildConfigurations.SelectMany(x => GetScenesForWorker(x.WorkerPlatform))
-                        .Select(AssetDatabase.GetAssetPath)
-                        .Distinct()
-                        .Select(scenePath => new EditorBuildSettingsScene(scenePath, true))
-                        .ToArray();
-            };
-        }
-
-        public BuildEnvironmentConfig GetEnvironmentConfigForWorker(string platform, BuildEnvironment targetEnvironment)
-        {
-            var config = WorkerBuildConfigurations.FirstOrDefault(x => x.WorkerPlatform == platform);
-            if (config == null)
-            {
-                throw new ArgumentException("Unknown WorkerPlatform " + platform);
-            }
-
-            return config.GetEnvironmentConfig(targetEnvironment);
-        }
-
-        public string[] GetScenePathsForWorker(string workerType)
-        {
-            return GetScenesForWorker(workerType)
-                .Where(sceneAsset => sceneAsset != null)
-                .Select(AssetDatabase.GetAssetPath)
-                .ToArray();
         }
     }
 }

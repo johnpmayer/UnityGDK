@@ -14,13 +14,6 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
         private SceneAsset[] scenesInAssetDatabase;
 
-        public void OnEnable()
-        {
-            scenesInAssetDatabase = AssetDatabase.FindAssets("t:Scene")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .Select(AssetDatabase.LoadAssetAtPath<SceneAsset>).ToArray();
-        }
-
         private bool scenesChanged;
         private string workerTypeName = "WorkerType";
         
@@ -28,6 +21,13 @@ namespace Improbable.Gdk.BuildSystem.Configuration
         private static readonly GUIContent RemoveWorkerTypeButtonContents = new GUIContent("-", "RemoveWorkerType");
         private static readonly GUIContent MoveUpButtonContents = new GUIContent("^", "Move item up");
         private static readonly GUIContent MoveDownButtonContents = new GUIContent("v", "Move item down");
+        
+        public void OnEnable()
+        {
+            scenesInAssetDatabase = AssetDatabase.FindAssets("t:Scene")
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Select(AssetDatabase.LoadAssetAtPath<SceneAsset>).ToArray();
+        }
         
         public override void OnInspectorGUI()
         {
@@ -41,12 +41,12 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
             if (GUI.Button(buttonRect, AddWorkerTypeButtonContents))
             {
-                var exists = workerConfiguration.WorkerBuildConfigurations.Any(x => x.WorkerPlatform == workerTypeName);
+                var exists = workerConfiguration.WorkerBuildConfigurations.Any(x => x.WorkerType == workerTypeName);
                 if (!exists)
                 {
                     var config = new WorkerBuildConfiguration
                     {
-                        WorkerPlatform = workerTypeName,
+                        WorkerType = workerTypeName,
                         ScenesForWorker = new SceneAsset[] { },
                         LocalBuildConfig = new BuildEnvironmentConfig()
                         {
@@ -86,7 +86,7 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 
         private bool DrawWorkerConfiguration(WorkerBuildConfiguration configurationForWorker)
         {
-            var platformName = configurationForWorker.WorkerPlatform;
+            var platformName = configurationForWorker.WorkerType;
 
             EditorGUILayout.BeginHorizontal();
             configurationForWorker.ShowFoldout =
@@ -266,20 +266,18 @@ namespace Improbable.Gdk.BuildSystem.Configuration
                         using (new EditorGUILayout.VerticalScope(indentedHelpBox))
                         using (IndentLevelScope(-EditorGUI.indentLevel))
                         {
-                            var enableDevelopmentBuild = GUILayout.Toggle(
-                                (newBuildOptions & BuildOptions.Development) != 0,
-                                "Development Build");
-                            if (enableDevelopmentBuild)
+                            var oldEnableDevelopmentBuild = (newBuildOptions & BuildOptions.Development) != 0;
+                            var enableDevelopmentBuild = EditorGUILayout.ToggleLeft("Development Build", oldEnableDevelopmentBuild);
+                            if (enableDevelopmentBuild != oldEnableDevelopmentBuild)
                             {
-                                environmentConfiguration.BuildOptions |= BuildOptions.Development;
+                                newBuildOptions ^= BuildOptions.Development;
                             }
 
-                            var enableHeadless = GUILayout.Toggle(
-                                (newBuildOptions & BuildOptions.EnableHeadlessMode) != 0,
-                                "Headless Mode");
-                            if (enableHeadless)
+                            var prevValue = (newBuildOptions & BuildOptions.Development) != 0;
+                            var newValue = EditorGUILayout.ToggleLeft("Headless Mode", prevValue);
+                            if (prevValue != newValue)
                             {
-                                environmentConfiguration.BuildOptions |= BuildOptions.EnableHeadlessMode;
+                                newBuildOptions ^= BuildOptions.EnableHeadlessMode;
                             }
                         }
                     }

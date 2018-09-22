@@ -7,14 +7,14 @@ namespace Improbable.Gdk.BuildSystem.Configuration
 {
     public class WorkerBuildData
     {
-        public readonly string WorkerPlatform;
+        public readonly string WorkerType;
 
-        public string PackageName => $"{WorkerPlatform}@{BuildTargetName}";
+        public string PackageName => $"{WorkerType}@{BuildTargetName}";
         
-        private string BuildTargetName => BuildTargetNames[buildTarget];
-
         public string BuildScratchDirectory =>
             PathUtils.Combine(PathUtils.BuildScratchDirectory, PackageName, ExecutableName).ToUnityPath();
+        
+        private string BuildTargetName => BuildTargetNames[buildTarget];
 
         private string ExecutableName => PackageName + BuildPlatformExtensions[buildTarget];
                 
@@ -38,14 +38,14 @@ namespace Improbable.Gdk.BuildSystem.Configuration
                 { BuildTarget.StandaloneOSX, "" }
             };
 
-        public WorkerBuildData(string workerPlatform, BuildTarget buildTarget)
+        public WorkerBuildData(string workerType, BuildTarget buildTarget)
         {
             if (!BuildTargetNames.ContainsKey(buildTarget))
             {
                 throw new ArgumentException("Unsupported BuildPlatform " + buildTarget);
             }
 
-            WorkerPlatform = workerPlatform;
+            WorkerType = workerType;
             this.buildTarget = buildTarget;
         }
     }
